@@ -1,0 +1,428 @@
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Main.java to edit this template
+ */
+package week7_individualproject;
+
+/**
+ * Name: Niranjan Raveendranath Date: February 24, 2026
+ *
+ * Project Description: This program is a console-based Personal Budget and
+ * Expense Tracker built in Java. Users can set monthly budgets for 5 different
+ * expense categories, record expense transactions, and view reports showing how
+ * much they have spent comparatively to their budget. The program uses array to
+ * store transaction data and methods to keep the code organized and easy to
+ * read.
+ */
+import java.util.Scanner;
+
+/**
+ *
+ * @author niranjanraveendranath
+ */
+public class BudgetTracker {
+
+    // Constants
+    // Maximum number of transactions the tracker can store
+    static final int MAX_TRANSACTIONS = 50;
+
+    // Number of budget categories
+    static final int NUM_CATEGORIES = 5;
+
+    // The 5 expense category names
+    static String[] categoryNames = {"Housing", "Food", "Transportation",
+        "Entertainment", "Utilities"};
+
+    // Monthly budget set for each category 
+    static double[] categoryBudgets = {1500.00, 500.00, 300.00, 200.00, 150.00};
+
+    // 3 parallel arrays to store transaction information
+    static double[] transactionAmounts = new double[MAX_TRANSACTIONS];
+    static int[] transactionCategories = new int[MAX_TRANSACTIONS];  //stores the category index (0-4)
+    static String[] transactionDescriptions = new String[MAX_TRANSACTIONS];
+
+    // Tracks how many transactions have been recorded so far
+    static int transactionCount = 0;
+
+    // Scanner for reading user input throughout the program
+    static Scanner scan = new Scanner(System.in);
+
+    // Main Method
+    /**
+     * This is the entry point of the program. It shows the welcome message,
+     * calls setBudgets() so the user can set their budgets, then runs the main
+     * menu loop until the user decides to exit.
+     */
+    public static void main(String[] args) {
+
+        // Welcome message when the program first opens
+        System.out.println("***********************************************");
+        System.out.println("            PERSONAL BUDGET TRACKER v1.0      ");
+        System.out.println("***********************************************");
+        System.out.println("                    WELCOME!                  ");
+        System.out.println();
+
+        // Ask the user to set their own budget for each category 
+        setBudgets();
+
+        // Main menu loop: keeps running until the user chooses to exit
+        boolean running = true;
+        while (running) {
+
+            displayMenu(); // show the menu options
+
+            int choice = getMenuChoice(); // get and validate the user's input
+
+            // Use a switch to route the user to the right feature
+            switch (choice) {
+                case 1:
+                    addTransaction();
+                    break;
+                case 2:
+                    viewBudgetSummary();
+                    break;
+                case 3:
+                    viewAllTransactions();
+                    break;
+                case 4:
+                    viewCategoryReport();
+                    break;
+                case 5:
+                    // User chose to exit the program
+                    System.out.println("\nGoodbye!");
+                    running = false;
+                    break;
+                default:
+                    System.out.println("Something went wrong. "
+                            + "Please try again.");
+            }
+        }
+    }
+
+    // Method: setBudgets
+    /**
+     * Purpose: Runs once when the program starts and asks the user to enter a
+     * monthly budget for each of the 5 categories. Keeps asking if the user
+     * enters a number that is 0 or negative. No parameters and no return value.
+     */
+    static void setBudgets() {
+        System.out.println("----------- SET YOUR MONTHLY BUDGETS -----------");
+        System.out.println("Enter your budget for each category.");
+        System.out.println();
+
+        // Loop through each category and ask the user for a budget amount
+        for (int i = 0; i < NUM_CATEGORIES; i++) {
+            System.out.print("Budget for " + categoryNames[i] + " ($): ");
+            double budget = scan.nextDouble();
+            scan.nextLine();
+
+            // Keep asking if the user enters a 0 or a negative number
+            while (budget <= 0) {
+                System.out.print("Please enter an amount greater than $0: ");
+                budget = scan.nextDouble();
+                scan.nextLine();
+            }
+
+            // Save the budget into the array at the matching index
+            categoryBudgets[i] = budget;
+        }
+
+        System.out.println();
+        System.out.println("Budgets saved! Here is what you set "
+                + "the budget as:");
+        for (int i = 0; i < NUM_CATEGORIES; i++) {
+            System.out.printf(" %-15s $%.2f%n",
+                    categoryNames[i], categoryBudgets[i]);
+        }
+        System.out.println();
+    }
+
+    // Method: displayMenu
+    /**
+     * Purpose: Prints the main menu to the console. This is a void method so it
+     * does not return anything. Put the menu in its own method so I do not have
+     * to copy and paste it every time. No parameters and no return value.
+     */
+    static void displayMenu() {
+        System.out.println();
+        System.out.println("***********************************************");
+        System.out.println("        PERSONAL BUDGET TRACKER v1.0          ");
+        System.out.println("***********************************************");
+        System.out.println("1. Add New Expense");
+        System.out.println("2. View Budget Summary");
+        System.out.println("3. View All Transactions");
+        System.out.println("4. View Category Report");
+        System.out.println("5. Exit");
+        System.out.println("-----------------------------------------------");
+        System.out.println("Enter your choice: ");
+    }
+
+    // Method: getMenuChoice
+    /**
+     * Purpose: Reads the user's menu selection and keeps prompting until they
+     * enter a valid number between 1 and 5. Put this in its own method to keep
+     * to keep the main menu loop clean and readable. No parameters. Returns: an
+     * integer between 1 and 5 representing the user's menu choice
+     */
+    static int getMenuChoice() {
+        int choice = scan.nextInt();
+        scan.nextLine(); // Clears the leftover newline after nextInt()
+
+        // Keep looping until the choice is in the valid range
+        while (choice < 1 || choice > 5) {
+            System.out.println("Please enter a number between 1 and 5: ");
+            choice = scan.nextInt();
+            scan.nextLine();
+        }
+        return choice;
+    }
+
+    // Method: addTransaction
+    /**
+     * Purpose: Walks the user through adding a new expense. Collects the
+     * category, amount, and a short description, then saves all three into the
+     * parallel arrays. Validates that the amount is positive and the category
+     * is in range before saving anything. No parameters and no return value.
+     */
+    static void addTransaction() {
+
+        // Check if we have hit the transaction limit before trying to add more
+        if (transactionCount >= MAX_TRANSACTIONS) {
+            System.out.println("\nSorry, you have reached the maximum of "
+                    + MAX_TRANSACTIONS + " transactions.");
+            return;
+        }
+
+        System.out.println("\n*************** ADD NEW EXPENSE ***************");
+
+        // Step 1: Show the category list and let the user pick one
+        System.out.println("Select a category:");
+        for (int i = 0; i < NUM_CATEGORIES; i++) {
+            // Add 1 because arrays start at 0 but the menu should start at 1
+            System.out.printf(" %d. %s%n", i + 1, categoryNames[i]);
+        }
+        System.out.println("Enter category number (1-5): ");
+
+        // Read and validate the category choice
+        int categoryChoice = scan.nextInt();
+        scan.nextLine(); // scan leftover new line
+
+        // Keep asking until the user picks a valid category number
+        while (categoryChoice < 1 || categoryChoice > NUM_CATEGORIES) {
+            System.out.println("Please enter a number between 1 and 5: ");
+            categoryChoice = scan.nextInt();
+            scan.nextLine();
+        }
+
+        // Subtract 1 to convert the user's choice into an array index
+        int categoryIndex = categoryChoice - 1;
+
+        // Step 2: Enter the amount
+        System.out.println("Enter expense amount ($): ");
+        double amount = scan.nextDouble();
+        scan.nextLine();
+
+        // Make sure the user did not enter 0 or a negative number
+        while (amount <= 0) {
+            System.out.println("Amount must be greater than $0. Try again: ");
+            amount = scan.nextDouble();
+            scan.nextLine();
+        }
+
+        // Step 3: Get a short description of what the expense was for
+        System.out.println("Enter a brief description: ");
+        String description = scan.nextLine();
+
+        // If the user leaves it blank just put a placeholder so the array is not empty
+        if (description.trim().isEmpty()) {
+            description = "No description";
+        }
+
+        // Step 4: Save everything into the arrays at the current transactionCount index
+        transactionAmounts[transactionCount] = amount;
+        transactionCategories[transactionCount] = categoryIndex;
+        transactionDescriptions[transactionCount] = description;
+        transactionCount++; // move the counter up so the next transaction goes in the next slot
+
+        System.out.printf("%nExpense of $%.2f added to %s.%n", amount,
+                categoryNames[categoryIndex]);
+
+        // Check if they are getting close to or over the budget for that category
+        double totalSpent = calculateCategoryTotal(categoryIndex);
+        String status = getBudgetStatus(totalSpent,
+                categoryBudgets[categoryIndex]);
+
+        // Only print an alert if there is actually something to warn about
+        if (!status.equals("OK")) {
+            System.out.println("Budget Alert: " + status);
+        }
+    }
+
+    // Method: calculateCategoryTotal
+    /**
+     * Purpose: Loops through all saved transactions and adds up only the ones
+     * that belong to the given category. Use this in multiple places so I made
+     * it its own method instead of rewriting the loop every time. Parameter:
+     * categoryIndex - the index of the category to total (0 to 4) Returns: the
+     * total amount spent in that category as a double
+     */
+    static double calculateCategoryTotal(int categoryIndex) {
+        double total = 0.0;
+
+        // Go through every saved transaction and only add it if the category matches
+        for (int i = 0; i < transactionCount; i++) {
+            if (transactionCategories[i] == categoryIndex) {
+                total += transactionAmounts[i];
+            }
+        }
+
+        return total;
+    }
+
+    // Method: getBudgetStatus
+    /**
+     * Purpose: Checks how much of the budget has been used and returns a status
+     * message. Returns "OVER BUDGET" if spending is at or above the budget,
+     * "NEAR LIMIT" if 80% or more has been used, and "OK" otherwise. Parameter:
+     * spent - the total amount spent in the category Parameter: budget - the
+     * monthly budget set for that category Returns: a String that says "OVER
+     * BUDGET", "NEAR LIMIT", or "OK"
+     */
+    static String getBudgetStatus(double spent, double budget) {
+
+        // Calculate the percentage of the budget that has been used
+        double percentUsed = (spent / budget) * 100;
+
+        if (spent >= budget) {
+            return "OVER BUDGET";
+        } else if (percentUsed >= 80) {
+            // Warn the user when they hit 80%
+            return "NEAR LIMIT";
+        } else {
+            return "OK";
+        }
+    }
+
+    // Method: viewBudgetSummary
+    /**
+     * Purpose: Prints a formatted table showing each category's budget, how
+     * much was spent, how much is remaining, and a warning tag if needed. Also
+     * shows a totals row at the bottom adding up all categories. No parameters
+     * and no return value.
+     */
+    static void viewBudgetSummary() {
+        System.out.println("\n=============== BUDGET SUMMARY ===============");
+
+        // printf lets me line up the columns so the table looks neat
+        System.out.printf("%-15s %10s %10s %12s%n", "Category", "Budget",
+                "Spent", "Remaining");
+        System.out.println("-------------------------------------------------");
+
+        // Running totals for the summary row at the bottom 
+        double totalBudget = 0;
+        double totalSpent = 0;
+
+        for (int i = 0; i < NUM_CATEGORIES; i++) {
+            double spent = calculateCategoryTotal(i);
+            double remaining = categoryBudgets[i] - spent;
+            String status = getBudgetStatus(spent, categoryBudgets[i]);
+
+            // Build the warning tag that appears at the end of the row
+            String statusTag = "";
+            if (status.equals("OVER BUDGET")) {
+                statusTag = " !! OVER BUDGET";
+            } else if (status.equals("NEAR LIMIT")) {
+                statusTag = " ** NEAR LIMIT";
+            }
+
+            System.out.printf("%-15s %10.2f %10.2f %12.2f%s%n",
+                    categoryNames[i], categoryBudgets[i],
+                    spent, remaining, statusTag);
+
+            totalBudget += categoryBudgets[i];
+            totalSpent += spent;
+        }
+
+        // Print the final totals row
+        System.out.println("-------------------------------------------------");
+        System.out.printf("%-15s %10.2f %10.2f %12.2f%n",
+                "TOTAL: ", totalBudget, totalSpent, totalBudget - totalSpent);
+
+    }
+
+    // Method: viewAllTransactions
+    /**
+     * Purpose: Lists every transaction the user has entered, showing the
+     * transaction number, category name, amount, and description. Handles the
+     * case where no transactions have been recorded yet. No parameters and no
+     * return value.
+     */
+    static void viewAllTransactions() {
+        System.out.println("\n============== ALL TRANSACTIONS ==============");
+
+        // Handle the case where no transactions exist yet
+        if (transactionCount == 0) {
+            System.out.println("No transactions recorded yet.");
+            return;
+        }
+
+        System.out.printf("%-5s %-15s %10s  %s%n",
+                "#", "Category", "Amount", "Description");
+        System.out.println("-------------------------------------------------");
+
+        for (int i = 0; i < transactionCount; i++) {
+            int catIndex = transactionCategories[i];
+            // i + 1 so the list shows 1, 2, 3 instead of 0, 1, 2
+            System.out.printf("%-5d %-15s %10.2f  %s%n",
+                    i + 1, categoryNames[catIndex], transactionAmounts[i],
+                    transactionDescriptions[i]);
+
+        }
+
+        System.out.println("-------------------------------------------------");
+        System.out.printf("Total transactions: %d%n", transactionCount);
+    }
+
+    // Method: viewCategoryReport
+    /**
+     * Purpose: Shows a detailed breakdown for each category including the
+     * budget, amount spent, remaining balance, percentage used, status, and a
+     * visual text progress bar. Each "#" in the bar represents 5% used. Used
+     * Math.min to make sure the bar never goes over 20 characters. No
+     * parameters and no return value.
+     */
+    static void viewCategoryReport() {
+        System.out.println("\n=============== CATEGORY REPORT ===============");
+
+        for (int i = 0; i < NUM_CATEGORIES; i++) {
+            double spent = calculateCategoryTotal(i);
+            double budget = categoryBudgets[i];
+            double remaining = budget - spent;
+            double percentUsed = (spent / budget) * 100;
+            String status = getBudgetStatus(spent, budget);
+
+            System.out.println();
+            System.out.println("Category: " + categoryNames[i]);
+            System.out.printf("\tBudget: $%.2f%n", budget);
+            System.out.printf("\tSpent: $%.2f%n", spent);
+            System.out.printf("\tRemaining: $%.2f%n", remaining);
+            System.out.printf("\tUsed: %.2f%%%n", percentUsed);
+            System.out.printf("\tStatus: %s%n", status);
+
+            // Progress bar: It is 20 characters wide and each "#" represent 5% of the budget
+            // Math.min makes sure the bar does not go longer than 20 characters even if over budget
+            System.out.print("\tProgress: [");
+            int filledBars = (int) Math.min(percentUsed / 5, 20);
+            for (int b = 0; b < 20; b++) {
+                if (b < filledBars) {
+                    System.out.print("#");
+                } else {
+                    System.out.print(".");
+                }
+            }
+            System.out.printf("] %.1f%%%n", percentUsed);
+            System.out.println("\t-------------------------------------------");
+
+        }
+    }
+}
